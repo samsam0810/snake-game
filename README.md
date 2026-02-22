@@ -35,7 +35,7 @@ npm run build
 npm install -g serve
 serve -s dist
 
-使用說明
+#使用說明
 
 方向控制：ArrowUp / ArrowDown / ArrowLeft / ArrowRight
 暫停/開始：空白鍵
@@ -43,7 +43,7 @@ serve -s dist
 音量調整：左側滑桿控制 BGM 音量
 牆生成提示：右側顯示，當分數達到指定值時會出現提示
 
-技術棧
+#技術棧
 
 框架：React 18 + TypeScript
 打包工具：Vite
@@ -51,6 +51,7 @@ serve -s dist
 狀態管理：React Hook
 動畫效果：CSS Animation (食物 pop 動畫、加速道具閃爍)
 
+#專案結構
 ├─ src/
 │  ├─ GameBoard.tsx        # 遊戲主畫面
 │  ├─ GameBoard.css        # 遊戲樣式
@@ -60,7 +61,7 @@ serve -s dist
 ├─ vite.config.ts
 └─ README.md
 
-未來功能拓展
+#未來功能拓展
 
 增加更多種類的道具（減速、增長等）
 加入排行榜與分數存檔功能
