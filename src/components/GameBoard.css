@@ -1,0 +1,175 @@
+.game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.game-info {
+  display: flex;
+  flex-direction: column;   /* 讓它變成兩列 */
+  gap: 1rem;
+  font-size: 0.95rem;
+}
+
+.game-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.score {
+  font-weight: 600;
+}
+
+.game-over {
+  color: #e74c3c;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.restart-button {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  background-color: #3498db;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.restart-button:hover {
+  background-color: #2980b9;
+}
+
+.restart-button:active {
+  background-color: #21618c;
+}
+
+.game-board {
+  display: grid;
+  grid-template-columns: repeat(20, 1fr);
+  grid-template-rows: repeat(20, 1fr);
+  width: 400px;
+  height: 400px;
+  border: 2px solid #222;
+  background-color: #111;
+}
+
+.game-board-wrapper {
+  display: flex;
+  flex-direction: row;        /* 左右排列 */
+  align-items: flex-start;    /* 頂端對齊 */
+  justify-content: center;    /* 遊戲板置中 */
+  gap: 2rem;                  /* 左右間距 */
+}
+
+.game-board-container {
+  margin: 0 auto;          /* 置中 */
+}
+/* 左側控制區 */
+.volume-control {
+  position: absolute;  /* 從文檔流抽出 */
+  left: 100px;          /* 左側距離 */
+  top: 50%;            /* 垂直置中 */
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* 垂直 slider */
+.volume-control input[type="range"] {
+  width: 20px;
+  height: 120px;
+  writing-mode: bt-lr;        /* slider 從下到上 */
+  -webkit-appearance: slider-vertical;
+  appearance: slider-vertical;
+}
+
+
+.game-cell {
+  transition: all 0.1s linear;
+  border: 1px solid #333;
+  box-sizing: border-box;
+}
+
+/* 最外圍粗灰線 */
+.top-edge    { border-top: 4px solid #888; }
+.bottom-edge { border-bottom: 4px solid #888; }
+.left-edge   { border-left: 4px solid #888; }
+.right-edge  { border-right: 4px solid #888; }
+
+/* 蛇身 */
+.snake {
+  background-color: #1a991e;
+}
+
+/* 蛇頭 */
+.snakeHead {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #06f111;
+  border-radius: 6px;
+}
+
+/* 用 ::after 畫箭頭 */
+.snakeHead::after {
+  content: '\25BA';          /* 黑色箭頭，初始向右 */
+  color: #111;
+  font-size: 1rem;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(var(--rotate, 0deg));
+}
+
+/* 設定方向 */
+.snakeHead.up::after    { content: '\25B2'; }  /* ▲ */
+.snakeHead.down::after  { content: '\25BC'; }   /* ▼ */
+.snakeHead.left::after  { content: '\25C4'; }  /* ◄ */
+.snakeHead.right::after { content: '\25BA'; }    /* ► */
+
+.food {
+  background-color: #e74c3c;
+  animation: food-pop 0.2s ease-in-out;
+}
+
+@keyframes food-pop {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.speed-powerup {
+  background-color: yellow;
+  border-radius: 50%;
+  animation: blink 0.8s infinite; /* 閃爍動畫 */
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; } /* 半透明，形成閃爍效果 */
+}
+
+.wall-hint {
+  position: absolute;       
+  right: 100px;             
+  top: 50%;                 
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;             
+  color: #fff;              /* 白色字，更明顯 */
+  font-size: 0.9rem;        /* 稍微大一點 */
+  font-weight: 600;         /* 半粗體 */
+  text-align: center;
+  text-shadow: 0 0 3px #000; /* 加點陰影讓字在背景更突出 */
+}
