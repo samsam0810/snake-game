@@ -1,6 +1,6 @@
 # Snake Game (貪食蛇遊戲)
 
-![snake-game](./screenshot.png) <!-- 可自行放遊戲截圖 -->
+![snake-game](public/images/snake-gmae.png) <!-- 可自行放遊戲截圖 -->
 
 ## 專案介紹
 這是一個使用 **React + TypeScript + Vite + CSS** 製作的貪食蛇遊戲。  
