@@ -148,9 +148,21 @@
 }
 
 .speed-powerup {
-  background-color: yellow;
-  border-radius: 50%;
+  /* background-color: yellow; */
+  /* background-color: #00BFFF; */
+  /* border-radius: 50%; */
+  position: relative;       /* 為 ::after 定位 */
   animation: blink 0.8s infinite; /* 閃爍動畫 */
+}
+
+.speed-powerup::after {
+  content: '\26A1';       /* ⚡ */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1rem;
+  color: yellow;             /* 白色閃電 */
 }
 
 @keyframes blink {
@@ -158,18 +170,71 @@
   50% { opacity: 0.5; } /* 半透明，形成閃爍效果 */
 }
 
+
+.speed-hint {
+  position: absolute;
+  right: 150px;        /* 跟牆提示詞對齊 */
+  top: 30%;            /* 比牆提示詞高 */
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 200px;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  text-shadow: 0 0 3px #000;
+}
+
 .wall-hint {
   position: absolute;       
-  right: 100px;             
+  right: 150px;             
   top: 50%;                 
   transform: translateY(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 120px;             
+  width: 200px;             
   color: #fff;              /* 白色字，更明顯 */
   font-size: 0.9rem;        /* 稍微大一點 */
   font-weight: 600;         /* 半粗體 */
   text-align: center;
   text-shadow: 0 0 3px #000; /* 加點陰影讓字在背景更突出 */
+}
+
+.invincible {
+  animation: invincible-glow 0.5s infinite alternate;
+  /* 可以保留原本的背景色 */
+  background-color: #06f111; 
+}
+
+/* keyframes 用 box-shadow 做閃爍光暈 */
+@keyframes invincible-glow {
+  0% {
+    box-shadow: 0 0 5px #06f111;
+  }
+  50% {
+    box-shadow: 0 0 15px yellow;
+  }
+  100% {
+    box-shadow: 0 0 5px #06f111;
+  }
+}
+
+.invincible-star {
+  /* background-color: yellow; */
+  /* border-radius: 50%; */
+  position: relative;        /* 為 ::after 定位 */
+  animation: blink 0.8s infinite;
+}
+
+.invincible-star::after {
+  content: '\2B50';          /* ⭐ */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1rem;
+  color: yellow;             /* 星星黃色 */
 }

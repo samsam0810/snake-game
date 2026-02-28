@@ -35,6 +35,8 @@ export function GameBoard() {
     wallEnabled,
     speedPowerups,
     wallRef,
+    invincibleStar,
+    isInvincible,
   } = useSnakeGame()
 
   const cells = Array.from({ length: BOARD_SIZE })
@@ -71,6 +73,8 @@ export function GameBoard() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [gameStatus, togglePause, setDirection])
 
+  const nextAppearScore = wallRef.current.nextScore
+  const nextDisappearScore = wallRef.current.nextScore + 5
   return (
     <div className="game-container">
       <div className="game-info">
@@ -104,10 +108,19 @@ export function GameBoard() {
           />
         </div>
         {/* 右側牆提示 */}
+        {speedPowerups.length > 0 && (
+          <div className="speed-hint">
+            加速道具(黃色)出現(持續10秒)，速度將變為兩倍持續3秒！
+          </div>
+        )}
         <div className="wall-hint">
-          {wallEnabled === false && gameStatus === 'playing' && (
+          {gameStatus !== 'idle' && (
             <div>
-              下一面牆將在分數 {wallRef.current.nextScore} 出現
+              {
+                wallEnabled 
+                ? `當分數達到 ${nextDisappearScore} 時牆將消失`
+                : `下一面牆將在分數 ${nextAppearScore} 出現`
+              }
             </div>
           )}
         </div>
@@ -132,12 +145,17 @@ export function GameBoard() {
               if (col === GRID_SIZE - 1) classes.push('right-edge')
             }
 
-            // === 蛇與食物 ===
+            // === 蛇與食物與星星 ===
+            const isStar = invincibleStar === index
             if (isSnakeHead) classes.push('snakeHead', direction)
             else if (isSnakeBody) classes.push('snake')
             else if (isFood) classes.push('food')
             else if (isSpeed) classes.push('speed-powerup')
+            else if (isStar) classes.push('invincible-star')
 
+            if (isInvincible && (isSnakeHead || isSnakeBody)) {
+              classes.push('invincible');
+            }
             return <div key={index} className={classes.join(' ')} />
           })}
         </div>

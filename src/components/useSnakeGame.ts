@@ -46,6 +46,7 @@ export function useSnakeGame() {
   const [speedPowerups, setSpeedPowerups] = useState<number[]>([])
   const speedPowerupRef = useRef<number[]>([])
 
+
   const foodRef = useRef<number>(getRandomFood(new Set(INITIAL_SNAKE), false))
   const [food, setFood] = useState<number>(foodRef.current)
 
@@ -61,27 +62,53 @@ export function useSnakeGame() {
   const [wallEnabled, setWallEnabled] = useState(false)
   const wallRef = useRef({ nextScore: 10, interval: 15 }) // 初始牆出現分數 10，間隔 15
 
+  // 無敵星星
+  const [invincibleStar, setInvincibleStar] = useState<number | null>(null)
+  const invincibleStarRef = useRef<number | null>(null)
+
+  const [isInvincible, setIsInvincible] = useState(false)
+  const isInvincibleRef = useRef(false)
+
+  const starDisappearTimeoutRef = useRef<number | null>(null)
+  const invincibleTimeoutRef = useRef<number | null>(null)
+  const nextSpawnTimeoutRef = useRef<number | null>(null)
+
+  // 道具存在時間
+  const speedPowerupTimeoutRef = useRef<{
+    [pos: number]: {
+      timeoutId: number
+      start: number
+      remaining: number
+    }
+  }>({})
+
   // === 新增：BGM 音量控制 ===
   const [bgmVolume, setBgmVolume] = useState(0.3) // 預設 30%
 
   // 調整音量
-  useEffect(() => {
+    useEffect(() => {
     if (bgmRef.current) {
       bgmRef.current.volume = bgmVolume
-      if (eatSoundRef.current) eatSoundRef.current.volume = bgmVolume
-      if (gameOverSoundRef.current) gameOverSoundRef.current.volume = bgmVolume
+    }
+    if (eatSoundRef.current) {
+      eatSoundRef.current.volume = bgmVolume
+    }
+    if (gameOverSoundRef.current) {
+      gameOverSoundRef.current.volume = bgmVolume
     }
   }, [bgmVolume])
 
   useEffect(() => {
   if (!eatSoundRef.current) {
     eatSoundRef.current = new Audio('/audio/freesound_community-eating-sound-effect-36186.mp3')
+    eatSoundRef.current.volume = bgmVolume
   }
   }, [])
 
   useEffect(() => {
   if (!gameOverSoundRef.current) {
     gameOverSoundRef.current = new Audio('/audio/freesound_community-game-over-arcade-6435.mp3')
+    gameOverSoundRef.current.volume = bgmVolume
   }
   }, [])
 
@@ -90,17 +117,132 @@ export function useSnakeGame() {
     () => Math.max(100, 300 - Math.floor(score / 5) * 50),
     [score],
   )
+
   const [isBoosted, setIsBoosted] = useState(false)
 
-  const spawnSpeedPowerup = useCallback((occupied: Set<number>, wallEnabled: boolean) => {
+  const BOOST_DURATION = 3000
+
+  const boostTimeoutRef = useRef<number | null>(null)
+  const boostStartRef = useRef<number>(0)
+  const boostRemainingRef = useRef<number>(BOOST_DURATION)
+
+  const SPAWN_DURATION = 10000 // 10 秒
+  const spawnSpeedPowerup = useCallback((occupied: Set<number>) => {
+    // 1. 生成一個不在蛇身的隨機格子
     let pos: number
     do {
       pos = Math.floor(Math.random() * BOARD_SIZE)
-    } while (occupied.has(pos) || (wallEnabled && isWallCell(pos)))
-
+    } while (occupied.has(pos))
+    
+    // 2. 加入 ref 與 state
     speedPowerupRef.current.push(pos)
     setSpeedPowerups([...speedPowerupRef.current])
+
+    // 3. 設定定時器，SPAWN_DURATION 後自動消失
+    const start = Date.now()
+      const timeoutId = window.setTimeout(() => {
+      const index = speedPowerupRef.current.indexOf(pos)
+      if (index !== -1) {
+        speedPowerupRef.current.splice(index, 1)
+        setSpeedPowerups([...speedPowerupRef.current])
+      }
+      // 清掉記錄
+      delete speedPowerupTimeoutRef.current[pos]
+
+    }, SPAWN_DURATION)
+
+    speedPowerupTimeoutRef.current[pos] = {
+      timeoutId,
+      start,
+      remaining: SPAWN_DURATION
+    }
   }, [])
+
+  const spawnInvincibleStar = useCallback(() => {
+  // 隨機生成位置
+    let pos: number
+    do {
+      pos = Math.floor(Math.random() * BOARD_SIZE)
+    } while (snakeSet.has(pos) || pos === food || speedPowerupRef.current.includes(pos))
+    
+    setInvincibleStar(pos)
+    invincibleStarRef.current = pos
+
+    // 10秒後消失
+    starDisappearTimeoutRef.current = window.setTimeout(() => {
+      // 自然消失
+      setInvincibleStar(null)
+      invincibleStarRef.current = null
+
+      // 從「消失」開始算 10~30秒後生成下一顆
+      scheduleNextStarSpawn()
+    }, 10000)
+  }, [snakeSet, food])
+
+  const scheduleNextStarSpawn = useCallback(() => {
+    const delay = 10000 + Math.random() * 20000
+
+    nextSpawnTimeoutRef.current = window.setTimeout(() => {
+      spawnInvincibleStar()
+    }, delay)
+
+  }, [spawnInvincibleStar])
+
+  const handleEatInvincibleStar = useCallback(() => {
+    // 取消自然消失 timer
+    if (starDisappearTimeoutRef.current) {
+      clearTimeout(starDisappearTimeoutRef.current)
+      starDisappearTimeoutRef.current = null
+    }
+
+    // 清掉星星
+    setInvincibleStar(null)
+    invincibleStarRef.current = null
+
+    // 進入無敵
+    setIsInvincible(true)
+    isInvincibleRef.current = true
+
+    // 設定無敵 10 秒
+    invincibleTimeoutRef.current = window.setTimeout(() => {
+      setIsInvincible(false)
+      isInvincibleRef.current = false
+
+      // ⭐ 無敵結束才開始算 10~30 秒
+      scheduleNextStarSpawn()
+
+    }, 10000)
+
+  }, [scheduleNextStarSpawn])
+
+  const pausePowerupTimers = () => {
+    Object.values(speedPowerupTimeoutRef.current).forEach(item => {
+
+      clearTimeout(item.timeoutId)
+
+      const elapsed = Date.now() - item.start
+      item.remaining -= elapsed
+    })
+  }
+
+  //新增「恢復倒數」函式
+  const resumePowerupTimers = () => {
+    Object.entries(speedPowerupTimeoutRef.current).forEach(([pos, item]) => {
+
+      item.start = Date.now()
+
+      item.timeoutId = window.setTimeout(() => {
+        const index = speedPowerupRef.current.indexOf(Number(pos))
+        if (index !== -1) {
+          speedPowerupRef.current.splice(index, 1)
+          setSpeedPowerups([...speedPowerupRef.current])
+        }
+
+        delete speedPowerupTimeoutRef.current[Number(pos)]
+
+      }, item.remaining)
+    })
+  }
 
   const startGame = useCallback(() => {
     const initialSet = new Set(INITIAL_SNAKE)
@@ -131,21 +273,64 @@ export function useSnakeGame() {
     }
     bgmRef.current.currentTime = 0
     bgmRef.current.play()
-  }, [])
 
-  const togglePause = useCallback(() => {
-    setGameStatus((prev) => {
-      if (prev === 'playing') {
-        bgmRef.current?.pause()
-        return 'paused'
-      }
-      if (prev === 'paused'){
-        bgmRef.current?.play()
-        return 'playing'
-      }
-      return prev
-    })
-  }, [])
+    // 清除舊的星星 timer
+    if (nextSpawnTimeoutRef.current) {
+      clearTimeout(nextSpawnTimeoutRef.current)
+    }
+    if (starDisappearTimeoutRef.current) {
+      clearTimeout(starDisappearTimeoutRef.current)
+    }
+    if (invincibleTimeoutRef.current) {
+      clearTimeout(invincibleTimeoutRef.current)
+    }
+
+    // 重置狀態
+    setInvincibleStar(null)
+    invincibleStarRef.current = null
+    setIsInvincible(false)
+    isInvincibleRef.current = false
+
+    // 1~10 秒後生成第一顆
+    const firstDelay = 1000 + Math.random() * 9000
+    nextSpawnTimeoutRef.current = window.setTimeout(() => {
+      spawnInvincibleStar()
+    }, firstDelay)
+
+  }, [spawnInvincibleStar, bgmVolume])
+
+
+  // 暫停時：
+    const togglePause = useCallback(() => {
+      setGameStatus((prev) => {
+        if (prev === 'playing') {
+          pausePowerupTimers()
+          if (boostTimeoutRef.current) {
+            clearTimeout(boostTimeoutRef.current)
+
+            const elapsed = Date.now() - boostStartRef.current
+            boostRemainingRef.current -= elapsed
+          }
+          bgmRef.current?.pause()
+          return 'paused'
+        }
+        if (prev === 'paused'){
+          resumePowerupTimers()
+          if (boostRemainingRef.current > 0) {
+            boostStartRef.current = Date.now()
+
+            boostTimeoutRef.current = window.setTimeout(() => {
+              setIsBoosted(false)
+              boostTimeoutRef.current = null
+            }, boostRemainingRef.current)
+          }
+          bgmRef.current?.play()
+          return 'playing'
+        }
+        return prev
+      })
+    }, [])
+
 
   const setDirection = useCallback((dir: Direction) => {
     const currentDir = directionRef.current
@@ -187,7 +372,7 @@ export function useSnakeGame() {
         (actualDir === 'up' && head < GRID_SIZE) ||
         (actualDir === 'down' && head >= GRID_SIZE * (GRID_SIZE - 1))
 
-      if (wallEnabled && isAtWall) {
+      if (wallEnabled && isAtWall && !isInvincibleRef.current) {
         setGameStatus('gameOver')
         bgmRef.current?.pause()
         bgmRef.current!.currentTime = 0
@@ -197,47 +382,52 @@ export function useSnakeGame() {
 
       switch (actualDir) {
         case 'right': {
-          if (wallEnabled && head % GRID_SIZE === GRID_SIZE - 1) {
+          const atRightEdge = head % GRID_SIZE === GRID_SIZE - 1
+          if (wallEnabled && atRightEdge && !isInvincibleRef.current) {
             setGameStatus('gameOver')
             bgmRef.current?.pause()
             bgmRef.current!.currentTime = 0
             gameOverSoundRef.current?.play()
             return
           }
-          newHead = wallEnabled ? head + 1 : (head % GRID_SIZE === GRID_SIZE - 1 ? head - (GRID_SIZE - 1) : head + 1)
+          //正常移動
+          newHead = atRightEdge ? head - (GRID_SIZE - 1) : head + 1
           break
         }
         case 'left': {
-          if (wallEnabled && head % GRID_SIZE === 0) {
+          const atLeftEdge = head % GRID_SIZE === 0
+          if (wallEnabled && atLeftEdge && !isInvincibleRef.current) {
             setGameStatus('gameOver')
             bgmRef.current?.pause()
             bgmRef.current!.currentTime = 0
             gameOverSoundRef.current?.play()
             return
           }
-          newHead = wallEnabled ? head - 1 : (head % GRID_SIZE === 0 ? head + (GRID_SIZE - 1) : head - 1)
+          newHead = atLeftEdge ? head + (GRID_SIZE - 1) : head - 1
           break
         }
         case 'up': {
-          if (wallEnabled && head < GRID_SIZE) {
-            setGameStatus('gameOver')
-            bgmRef.current?.pause()
-            bgmRef.current!.currentTime = 0
-            gameOverSoundRef.current?.play()
-            return
+          const atTopEdge = head < GRID_SIZE
+          if (wallEnabled && atTopEdge && !isInvincibleRef.current) {
+          setGameStatus('gameOver')
+          bgmRef.current?.pause()
+          bgmRef.current!.currentTime = 0
+          gameOverSoundRef.current?.play()
+          return
           }
-          newHead = wallEnabled ? head - GRID_SIZE : (head < GRID_SIZE ? head + GRID_SIZE * (GRID_SIZE - 1) : head - GRID_SIZE)
+           newHead = atTopEdge ? head + GRID_SIZE * (GRID_SIZE - 1) : head - GRID_SIZE
           break
         }
         case 'down': {
-          if (wallEnabled && head >= GRID_SIZE * (GRID_SIZE - 1)) {
+          const atBottomEdge = head >= GRID_SIZE * (GRID_SIZE - 1)
+          if (wallEnabled && atBottomEdge && !isInvincibleRef.current) {
             setGameStatus('gameOver')
             bgmRef.current?.pause()
             bgmRef.current!.currentTime = 0
             gameOverSoundRef.current?.play()
             return
           }
-          newHead = wallEnabled ? head + GRID_SIZE : (head >= GRID_SIZE * (GRID_SIZE - 1) ? head % GRID_SIZE : head + GRID_SIZE)
+          newHead = atBottomEdge ? head % GRID_SIZE : head + GRID_SIZE
           break
         }
       }
@@ -248,7 +438,7 @@ export function useSnakeGame() {
           : [newHead, ...prevSnake.slice(0, -1)]
 
         const snakeBody = new Set(newSnake.slice(1))
-        if (snakeBody.has(newHead)) {
+        if (snakeBody.has(newHead) && !isInvincibleRef.current) {
           setGameStatus('gameOver')
           bgmRef.current?.pause()
           bgmRef.current!.currentTime = 0
@@ -262,6 +452,11 @@ export function useSnakeGame() {
         // 同步更新所有 state 給畫面渲染
         setSnake(newSnake)
         setSnakeSet(new Set(newSnake))
+
+        // === 吃到無敵星星 ===
+        if (newHead === invincibleStarRef.current) {
+          handleEatInvincibleStar()
+        }
 
         // === 吃到食物 ===
       if (willEat) {
@@ -280,9 +475,8 @@ export function useSnakeGame() {
           wallRef.current.interval += 5
         }
 
-        // 2. 傳入最新的 currentWallActive，這樣道具就不會生在牆上了
         if (nextScore % 5 === 0) {
-          spawnSpeedPowerup(new Set(newSnake), currentWallActive)
+          spawnSpeedPowerup(new Set(newSnake))
         }
 
         eatSoundRef.current!.currentTime = 0
@@ -299,7 +493,19 @@ export function useSnakeGame() {
         setIsBoosted(true) // 這裡更新 State，會強制 useEffect 重新執行並套用新速度！
 
         // 3秒後解除加速
-        setTimeout(() => { setIsBoosted(false) }, 3000)
+        // setTimeout(() => { setIsBoosted(false) }, 3000)
+        // 如果之前有 timeout，先清掉
+        if (boostTimeoutRef.current) {
+          clearTimeout(boostTimeoutRef.current)
+        }
+
+        boostStartRef.current = Date.now()
+        boostRemainingRef.current = BOOST_DURATION
+
+        boostTimeoutRef.current = window.setTimeout(() => {
+          setIsBoosted(false)
+          boostTimeoutRef.current = null
+        }, BOOST_DURATION)
       }
     }
 
@@ -310,7 +516,7 @@ export function useSnakeGame() {
     return () => clearInterval(intervalId)
 
   // 記得這裡要在依賴陣列中加入 isBoosted！這樣狀態一變，就會立刻切換速度
-  }, [gameStatus, speed, wallEnabled, score, food, spawnSpeedPowerup, isBoosted])
+  }, [gameStatus, speed, wallEnabled, score, food, spawnSpeedPowerup, isBoosted, handleEatInvincibleStar])
 
   return {
     snake,
@@ -327,6 +533,8 @@ export function useSnakeGame() {
     wallEnabled,
     speedPowerups,
     wallRef,
+    invincibleStar,
+    isInvincible,
   }
 }
 
