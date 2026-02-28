@@ -238,3 +238,27 @@
   font-size: 1rem;
   color: yellow;             /* 星星黃色 */
 }
+
+
+.mute-button {
+  margin-left: 8px;
+  background-color: #333;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: background-color 0.2s;
+}
+
+.mute-button:hover {
+  background-color: #555;
+}
+
+.mute-button .icon {
+  font-size: 1rem;
+}

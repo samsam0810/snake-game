@@ -39,6 +39,9 @@ export function useSnakeGame() {
   const eatSoundRef = useRef<HTMLAudioElement | null>(null)
   const gameOverSoundRef = useRef<HTMLAudioElement | null>(null)
 
+  const [isMuted, setIsMuted] = useState(false)
+  const isMutedRef = useRef(false) // 用 ref 保持最新值給 closure 用
+
   const [snake, setSnake] = useState<number[]>(INITIAL_SNAKE)
   const snakeRef = useRef<number[]>(INITIAL_SNAKE)
   const [snakeSet, setSnakeSet] = useState<Set<number>>(new Set(INITIAL_SNAKE))
@@ -87,30 +90,45 @@ export function useSnakeGame() {
 
   // 調整音量
     useEffect(() => {
-    if (bgmRef.current) {
-      bgmRef.current.volume = bgmVolume
+    const volume = isMutedRef.current ? 0 : bgmVolume
+    if (!bgmRef.current) {
+      bgmRef.current = new Audio('/audio/kazeem_faheem-game_bg_music_loop-472208.mp3')
+      bgmRef.current.loop = true
     }
-    if (eatSoundRef.current) {
-      eatSoundRef.current.volume = bgmVolume
-    }
-    if (gameOverSoundRef.current) {
-      gameOverSoundRef.current.volume = bgmVolume
-    }
-  }, [bgmVolume])
+    bgmRef.current.volume = volume
 
-  useEffect(() => {
-  if (!eatSoundRef.current) {
-    eatSoundRef.current = new Audio('/audio/freesound_community-eating-sound-effect-36186.mp3')
-    eatSoundRef.current.volume = bgmVolume
-  }
+    if (!eatSoundRef.current) {
+      eatSoundRef.current = new Audio('/audio/freesound_community-eating-sound-effect-36186.mp3')
+      eatSoundRef.current.volume = volume
+    }
+    if (!gameOverSoundRef.current) {
+      gameOverSoundRef.current = new Audio('/audio/freesound_community-game-over-arcade-6435.mp3')
+      gameOverSoundRef.current.volume = volume
+    }
   }, [])
 
-  useEffect(() => {
-  if (!gameOverSoundRef.current) {
-    gameOverSoundRef.current = new Audio('/audio/freesound_community-game-over-arcade-6435.mp3')
-    gameOverSoundRef.current.volume = bgmVolume
-  }
-  }, [])
+    // Slider 調整音量
+    useEffect(() => {
+      const volume = isMutedRef.current ? 0 : bgmVolume
+      if (bgmRef.current) bgmRef.current.volume = volume
+      if (eatSoundRef.current) eatSoundRef.current.volume = volume
+      if (gameOverSoundRef.current) gameOverSoundRef.current.volume = volume
+    }, [bgmVolume])
+
+    const toggleMute = useCallback(() => {
+      setIsMuted(prev => {
+        const newMuted = !prev
+        isMutedRef.current = newMuted
+
+        const volume = newMuted ? 0 : bgmVolume
+        // 立即套用到所有音效
+        if (bgmRef.current) bgmRef.current.volume = volume
+        if (eatSoundRef.current) eatSoundRef.current.volume = volume
+        if (gameOverSoundRef.current) gameOverSoundRef.current.volume = volume
+
+        return newMuted
+      })
+    }, [bgmVolume])
 
   // 根據分數調整速度：初始 300ms，每 +5 分加快 50ms，最快 100ms
   const speed = useMemo(
@@ -265,14 +283,11 @@ export function useSnakeGame() {
 
     setIsBoosted(false) // <--- 新增這行，確保重新開始時不會自帶加速
 
-    // 音樂初始化
-    if (!bgmRef.current) {
-      bgmRef.current = new Audio('/audio/kazeem_faheem-game_bg_music_loop-472208.mp3')
-      bgmRef.current.volume = bgmVolume
-      bgmRef.current.loop = true
+    // 播放 BGM
+    if (bgmRef.current) {
+      bgmRef.current.currentTime = 0
+      if (!isMutedRef.current) bgmRef.current.play()
     }
-    bgmRef.current.currentTime = 0
-    bgmRef.current.play()
 
     // 清除舊的星星 timer
     if (nextSpawnTimeoutRef.current) {
@@ -298,6 +313,7 @@ export function useSnakeGame() {
     }, firstDelay)
 
   }, [spawnInvincibleStar, bgmVolume])
+
 
 
   // 暫停時：
@@ -535,6 +551,8 @@ export function useSnakeGame() {
     wallRef,
     invincibleStar,
     isInvincible,
+    toggleMute,
+    isMuted,
   }
 }
 

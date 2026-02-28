@@ -37,6 +37,8 @@ export function GameBoard() {
     wallRef,
     invincibleStar,
     isInvincible,
+    toggleMute,
+    isMuted,
   } = useSnakeGame()
 
   const cells = Array.from({ length: BOARD_SIZE })
@@ -106,6 +108,11 @@ export function GameBoard() {
             value={bgmVolume * 100}
             onChange={(e) => setBgmVolume(Number(e.target.value) / 100)}
           />
+          {/* 一鍵靜音/恢復按鈕 */}
+          <button className="mute-button" onClick={toggleMute}>
+            <span className="icon">{isMuted ? '🔇' : '🔊'}</span>
+            {isMuted ? '靜音' : '音量'}
+          </button>
         </div>
         {/* 右側牆提示 */}
         {speedPowerups.length > 0 && (
