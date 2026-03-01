@@ -76,6 +76,12 @@ export function useSnakeGame() {
   const invincibleTimeoutRef = useRef<number | null>(null)
   const nextSpawnTimeoutRef = useRef<number | null>(null)
 
+  // 星星倒數秒數給玩家提示
+  const [starRemaining, setStarRemaining] = useState<number | null>(null)
+  const starIntervalRef = useRef<number | null>(null) // 用來每 200ms 更新倒數
+  const starStartRef = useRef<number>(0) // 記錄星星開始生成或吃到的時間
+  const starDurationRef = useRef<number>(10000) // 星星或無敵持續時間
+
   // 道具存在時間
   const speedPowerupTimeoutRef = useRef<{
     [pos: number]: {
@@ -186,6 +192,17 @@ export function useSnakeGame() {
     setInvincibleStar(pos)
     invincibleStarRef.current = pos
 
+    // 設定倒數
+    starDurationRef.current = 10000
+    starStartRef.current = Date.now()
+    setStarRemaining(10) // 秒數
+    if (starIntervalRef.current) clearInterval(starIntervalRef.current)
+    starIntervalRef.current = window.setInterval(() => {
+      const elapsed = Date.now() - starStartRef.current
+      const remaining = Math.ceil((starDurationRef.current - elapsed) / 1000)
+      setStarRemaining(remaining > 0 ? remaining : 0)
+    }, 200)
+
     // 10秒後消失
     starDisappearTimeoutRef.current = window.setTimeout(() => {
       // 自然消失
@@ -221,6 +238,16 @@ export function useSnakeGame() {
     setIsInvincible(true)
     isInvincibleRef.current = true
 
+    starDurationRef.current = 10000
+    starStartRef.current = Date.now()
+    setStarRemaining(10)
+    if (starIntervalRef.current) clearInterval(starIntervalRef.current)
+    starIntervalRef.current = window.setInterval(() => {
+      const elapsed = Date.now() - starStartRef.current
+      const remaining = Math.ceil((starDurationRef.current - elapsed) / 1000)
+      setStarRemaining(remaining > 0 ? remaining : 0)
+    }, 200)
+
     // 設定無敵 10 秒
     invincibleTimeoutRef.current = window.setTimeout(() => {
       setIsInvincible(false)
@@ -234,32 +261,65 @@ export function useSnakeGame() {
   }, [scheduleNextStarSpawn])
 
   const pausePowerupTimers = () => {
+    // 加速道具暫停
     Object.values(speedPowerupTimeoutRef.current).forEach(item => {
-
       clearTimeout(item.timeoutId)
-
       const elapsed = Date.now() - item.start
       item.remaining -= elapsed
     })
+    // 無敵星星暫停
+    if (starIntervalRef.current) clearInterval(starIntervalRef.current)
+    if (invincibleTimeoutRef.current) {
+      const elapsed = Date.now() - starStartRef.current
+      starDurationRef.current -= elapsed
+      clearTimeout(invincibleTimeoutRef.current)
+      invincibleTimeoutRef.current = null
+  }
   }
 
   //新增「恢復倒數」函式
   const resumePowerupTimers = () => {
+    // 加速道具恢復
     Object.entries(speedPowerupTimeoutRef.current).forEach(([pos, item]) => {
-
       item.start = Date.now()
-
       item.timeoutId = window.setTimeout(() => {
         const index = speedPowerupRef.current.indexOf(Number(pos))
         if (index !== -1) {
           speedPowerupRef.current.splice(index, 1)
           setSpeedPowerups([...speedPowerupRef.current])
         }
-
         delete speedPowerupTimeoutRef.current[Number(pos)]
-
       }, item.remaining)
     })
+    // 無敵星星倒數恢復
+    if (starRemaining !== null) {
+      starStartRef.current = Date.now()
+      if (isInvincibleRef.current) {
+        invincibleTimeoutRef.current = window.setTimeout(() => {
+          setIsInvincible(false)
+          isInvincibleRef.current = false
+          setStarRemaining(null)
+          if (starIntervalRef.current) {
+            clearInterval(starIntervalRef.current)
+            starIntervalRef.current = null
+          }
+          scheduleNextStarSpawn()
+        }, starDurationRef.current)
+
+        starIntervalRef.current = window.setInterval(() => {
+          const elapsed = Date.now() - starStartRef.current
+          const remaining = Math.ceil((starDurationRef.current - elapsed) / 1000)
+          setStarRemaining(remaining > 0 ? remaining : 0)
+        }, 200)
+      } else {
+        // 星星存在但沒吃
+        starIntervalRef.current = window.setInterval(() => {
+          const elapsed = Date.now() - starStartRef.current
+          const remaining = Math.ceil((starDurationRef.current - elapsed) / 1000)
+          setStarRemaining(remaining > 0 ? remaining : 0)
+        }, 200)
+      }
+    }
   }
 
   const startGame = useCallback(() => {
@@ -553,6 +613,7 @@ export function useSnakeGame() {
     isInvincible,
     toggleMute,
     isMuted,
+    starRemaining,
   }
 }
 

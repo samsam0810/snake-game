@@ -222,6 +222,14 @@
   }
 }
 
+.icon {
+  margin-right: 4px;
+  font-size: 1rem;
+  line-height: 1;          /* 切斷 emoji baseline 影響 */
+  display: flex;
+  align-items: center;
+}
+
 .invincible-star {
   /* background-color: yellow; */
   /* border-radius: 50%; */
@@ -237,6 +245,39 @@
   transform: translate(-50%, -50%);
   font-size: 1rem;
   color: yellow;             /* 星星黃色 */
+}
+
+.invincible-hint {
+  position: absolute;
+  right: 150px;      /* 跟 speed / wall 對齊 */
+  top: 20%;          /* 比 speed-hint 高一些 */
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 200px;
+  color: yellow;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-shadow: 0 0 3px #000;
+  /* animation: pulse 1s infinite; */
+}
+
+.invincible-hint.active {
+  color: #0ff;        /* 無敵時顏色改成青色 */
+}
+
+.flash-number {
+  display: inline-block;      /* 不用 flex，避免 baseline 被 emoji 拉扯 */
+  animation: pulse 1s infinite;
+  font-size: 0.9rem;
+  margin-left: 0.2rem;      /* 文字和秒數間隔 */
+  transform-origin: center center;  /* 將動畫中心設在自身中心 */
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
 }
 
 

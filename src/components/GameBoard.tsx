@@ -39,6 +39,7 @@ export function GameBoard() {
     isInvincible,
     toggleMute,
     isMuted,
+    starRemaining,
   } = useSnakeGame()
 
   const cells = Array.from({ length: BOARD_SIZE })
@@ -118,6 +119,21 @@ export function GameBoard() {
         {speedPowerups.length > 0 && (
           <div className="speed-hint">
             加速道具(黃色)出現(持續10秒)，速度將變為兩倍持續3秒！
+          </div>
+        )}
+        {invincibleStar !== null && !isInvincible && (
+          <div className="invincible-hint">
+            {/* ⭐ 星星消失: {starRemaining}s */}
+            <span className="icon">⭐</span>
+             星星消失： <span className="flash-number">{starRemaining}s</span>
+          </div>
+        )}
+
+        {isInvincible && (
+          <div className="invincible-hint active">
+            {/* 🛡 無敵剩餘: {starRemaining}s */}
+            <span className="icon">🛡</span>
+             無敵剩餘： <span className="flash-number">{starRemaining}s</span>
           </div>
         )}
         <div className="wall-hint">
