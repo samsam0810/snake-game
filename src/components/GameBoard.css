@@ -231,8 +231,6 @@
 }
 
 .invincible-star {
-  /* background-color: yellow; */
-  /* border-radius: 50%; */
   position: relative;        /* 為 ::after 定位 */
   animation: blink 0.8s infinite;
 }
@@ -260,7 +258,6 @@
   font-weight: 600;
   font-size: 0.9rem;
   text-shadow: 0 0 3px #000;
-  /* animation: pulse 1s infinite; */
 }
 
 .invincible-hint.active {

@@ -123,7 +123,6 @@ export function GameBoard() {
         )}
         {invincibleStar !== null && !isInvincible && (
           <div className="invincible-hint">
-            {/* ⭐ 星星消失: {starRemaining}s */}
             <span className="icon">⭐</span>
              星星消失： <span className="flash-number">{starRemaining}s</span>
           </div>
@@ -131,7 +130,6 @@ export function GameBoard() {
 
         {isInvincible && (
           <div className="invincible-hint active">
-            {/* 🛡 無敵剩餘: {starRemaining}s */}
             <span className="icon">🛡</span>
              無敵剩餘： <span className="flash-number">{starRemaining}s</span>
           </div>

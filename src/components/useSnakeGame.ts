@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useGameAudio } from './useGameAudio'
+
 
 const GRID_SIZE = 20
 const BOARD_SIZE = GRID_SIZE * GRID_SIZE
@@ -10,7 +12,7 @@ export type GameStatus = 'idle' | 'playing' | 'paused' | 'gameOver'
 
 const oppositeDirection: Record<Direction, Direction> = {
   up: 'down',
-  down: 'up',
+  down: 'up', 
   left: 'right',
   right: 'left',
 }
@@ -35,12 +37,19 @@ function isWallCell(index: number) {
 
 
 export function useSnakeGame() {
-  const bgmRef = useRef<HTMLAudioElement | null>(null)
-  const eatSoundRef = useRef<HTMLAudioElement | null>(null)
-  const gameOverSoundRef = useRef<HTMLAudioElement | null>(null)
+  const {
+    isMuted,
+    volume: bgmVolume,
+    setVolume: setBgmVolume,
+    toggleMute,
+    playBgm,
+    pauseBgm,
+    resetBgm,
+    playEat,
+    playGameOver,
+} = useGameAudio()
 
-  const [isMuted, setIsMuted] = useState(false)
-  const isMutedRef = useRef(false) // 用 ref 保持最新值給 closure 用
+  const [gameEvent, setGameEvent] = useState<null | 'eat'>(null)
 
   const [snake, setSnake] = useState<number[]>(INITIAL_SNAKE)
   const snakeRef = useRef<number[]>(INITIAL_SNAKE)
@@ -91,50 +100,26 @@ export function useSnakeGame() {
     }
   }>({})
 
-  // === 新增：BGM 音量控制 ===
-  const [bgmVolume, setBgmVolume] = useState(0.3) // 預設 30%
-
-  // 調整音量
-    useEffect(() => {
-    const volume = isMutedRef.current ? 0 : bgmVolume
-    if (!bgmRef.current) {
-      bgmRef.current = new Audio('/audio/kazeem_faheem-game_bg_music_loop-472208.mp3')
-      bgmRef.current.loop = true
+  useEffect(() => {
+    if (gameStatus === 'playing') {
+      playBgm()
     }
-    bgmRef.current.volume = volume
-
-    if (!eatSoundRef.current) {
-      eatSoundRef.current = new Audio('/audio/freesound_community-eating-sound-effect-36186.mp3')
-      eatSoundRef.current.volume = volume
+    if(gameStatus === 'paused'){
+      pauseBgm()
     }
-    if (!gameOverSoundRef.current) {
-      gameOverSoundRef.current = new Audio('/audio/freesound_community-game-over-arcade-6435.mp3')
-      gameOverSoundRef.current.volume = volume
+    if(gameStatus === 'gameOver'){
+      pauseBgm()
+      resetBgm()
+      playGameOver()
     }
-  }, [])
+  }, [gameStatus, playBgm, pauseBgm, resetBgm, playGameOver])
 
-    // Slider 調整音量
-    useEffect(() => {
-      const volume = isMutedRef.current ? 0 : bgmVolume
-      if (bgmRef.current) bgmRef.current.volume = volume
-      if (eatSoundRef.current) eatSoundRef.current.volume = volume
-      if (gameOverSoundRef.current) gameOverSoundRef.current.volume = volume
-    }, [bgmVolume])
-
-    const toggleMute = useCallback(() => {
-      setIsMuted(prev => {
-        const newMuted = !prev
-        isMutedRef.current = newMuted
-
-        const volume = newMuted ? 0 : bgmVolume
-        // 立即套用到所有音效
-        if (bgmRef.current) bgmRef.current.volume = volume
-        if (eatSoundRef.current) eatSoundRef.current.volume = volume
-        if (gameOverSoundRef.current) gameOverSoundRef.current.volume = volume
-
-        return newMuted
-      })
-    }, [bgmVolume])
+  useEffect(() => {
+  if (gameEvent === 'eat') {
+    playEat()
+    setGameEvent(null)  
+  }
+}, [gameEvent, playEat])
 
   // 根據分數調整速度：初始 300ms，每 +5 分加快 50ms，最快 100ms
   const speed = useMemo(
@@ -343,11 +328,6 @@ export function useSnakeGame() {
 
     setIsBoosted(false) // <--- 新增這行，確保重新開始時不會自帶加速
 
-    // 播放 BGM
-    if (bgmRef.current) {
-      bgmRef.current.currentTime = 0
-      if (!isMutedRef.current) bgmRef.current.play()
-    }
 
     // 清除舊的星星 timer
     if (nextSpawnTimeoutRef.current) {
@@ -372,7 +352,7 @@ export function useSnakeGame() {
       spawnInvincibleStar()
     }, firstDelay)
 
-  }, [spawnInvincibleStar, bgmVolume])
+  }, [spawnInvincibleStar])
 
 
 
@@ -387,7 +367,6 @@ export function useSnakeGame() {
             const elapsed = Date.now() - boostStartRef.current
             boostRemainingRef.current -= elapsed
           }
-          bgmRef.current?.pause()
           return 'paused'
         }
         if (prev === 'paused'){
@@ -400,7 +379,6 @@ export function useSnakeGame() {
               boostTimeoutRef.current = null
             }, boostRemainingRef.current)
           }
-          bgmRef.current?.play()
           return 'playing'
         }
         return prev
@@ -450,9 +428,6 @@ export function useSnakeGame() {
 
       if (wallEnabled && isAtWall && !isInvincibleRef.current) {
         setGameStatus('gameOver')
-        bgmRef.current?.pause()
-        bgmRef.current!.currentTime = 0
-        eatSoundRef.current?.play() // 撞牆音效先用吃音效代替
         return
       }
 
@@ -461,9 +436,6 @@ export function useSnakeGame() {
           const atRightEdge = head % GRID_SIZE === GRID_SIZE - 1
           if (wallEnabled && atRightEdge && !isInvincibleRef.current) {
             setGameStatus('gameOver')
-            bgmRef.current?.pause()
-            bgmRef.current!.currentTime = 0
-            gameOverSoundRef.current?.play()
             return
           }
           //正常移動
@@ -474,9 +446,6 @@ export function useSnakeGame() {
           const atLeftEdge = head % GRID_SIZE === 0
           if (wallEnabled && atLeftEdge && !isInvincibleRef.current) {
             setGameStatus('gameOver')
-            bgmRef.current?.pause()
-            bgmRef.current!.currentTime = 0
-            gameOverSoundRef.current?.play()
             return
           }
           newHead = atLeftEdge ? head + (GRID_SIZE - 1) : head - 1
@@ -486,9 +455,6 @@ export function useSnakeGame() {
           const atTopEdge = head < GRID_SIZE
           if (wallEnabled && atTopEdge && !isInvincibleRef.current) {
           setGameStatus('gameOver')
-          bgmRef.current?.pause()
-          bgmRef.current!.currentTime = 0
-          gameOverSoundRef.current?.play()
           return
           }
            newHead = atTopEdge ? head + GRID_SIZE * (GRID_SIZE - 1) : head - GRID_SIZE
@@ -498,9 +464,6 @@ export function useSnakeGame() {
           const atBottomEdge = head >= GRID_SIZE * (GRID_SIZE - 1)
           if (wallEnabled && atBottomEdge && !isInvincibleRef.current) {
             setGameStatus('gameOver')
-            bgmRef.current?.pause()
-            bgmRef.current!.currentTime = 0
-            gameOverSoundRef.current?.play()
             return
           }
           newHead = atBottomEdge ? head % GRID_SIZE : head + GRID_SIZE
@@ -516,10 +479,7 @@ export function useSnakeGame() {
         const snakeBody = new Set(newSnake.slice(1))
         if (snakeBody.has(newHead) && !isInvincibleRef.current) {
           setGameStatus('gameOver')
-          bgmRef.current?.pause()
-          bgmRef.current!.currentTime = 0
-          gameOverSoundRef.current!.currentTime = 0
-          gameOverSoundRef.current!.play()
+          // resetBgm()
           return
         }
       
@@ -536,6 +496,7 @@ export function useSnakeGame() {
 
         // === 吃到食物 ===
       if (willEat) {
+        setGameEvent('eat')
         const nextScore = score + 1
         setScore(nextScore)
 
@@ -555,8 +516,6 @@ export function useSnakeGame() {
           spawnSpeedPowerup(new Set(newSnake))
         }
 
-        eatSoundRef.current!.currentTime = 0
-        eatSoundRef.current!.play()
         setFood(getRandomFood(new Set(newSnake), currentWallActive))
       }
 
@@ -568,8 +527,6 @@ export function useSnakeGame() {
 
         setIsBoosted(true) // 這裡更新 State，會強制 useEffect 重新執行並套用新速度！
 
-        // 3秒後解除加速
-        // setTimeout(() => { setIsBoosted(false) }, 3000)
         // 如果之前有 timeout，先清掉
         if (boostTimeoutRef.current) {
           clearTimeout(boostTimeoutRef.current)
@@ -590,7 +547,6 @@ export function useSnakeGame() {
     const intervalId = setInterval(gameTick, currentSpeed)
     
     return () => clearInterval(intervalId)
-
   // 記得這裡要在依賴陣列中加入 isBoosted！這樣狀態一變，就會立刻切換速度
   }, [gameStatus, speed, wallEnabled, score, food, spawnSpeedPowerup, isBoosted, handleEatInvincibleStar])
 
