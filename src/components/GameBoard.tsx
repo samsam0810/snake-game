@@ -25,6 +25,7 @@ export function GameBoard() {
     snakeSet,
     food,
     score,
+    highScore,
     gameStatus,
     direction,
     startGame,
@@ -98,7 +99,16 @@ export function GameBoard() {
         )}
       </div>
       <div className="game-board-wrapper">
-            {/* 左側音量控制 */}
+            {/* 左側資訊與控制區 (包含最高分與音量) */}
+        <div className="left-panel">
+          {/*  最高分顯示面板 */}
+          <div className="high-score-board">
+            <span className="icon">🏆</span>
+            <div className="high-score-text">
+              <span className="label">最高分</span>
+              <span className="number">{highScore}</span>
+            </div>
+          </div>
         <div className="volume-control">
           <label htmlFor="bgmVolume">遊戲音量</label>
           <input
@@ -114,6 +124,7 @@ export function GameBoard() {
             <span className="icon">{isMuted ? '🔇' : '🔊'}</span>
             {isMuted ? '靜音' : '音量'}
           </button>
+        </div>
         </div>
         {/* 右側牆提示 */}
         {speedPowerups.length > 0 && (

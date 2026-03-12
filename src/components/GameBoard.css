@@ -70,17 +70,73 @@
 .game-board-container {
   margin: 0 auto;          /* 置中 */
 }
-/* 左側控制區 */
-.volume-control {
-  position: absolute;  /* 從文檔流抽出 */
-  left: 100px;          /* 左側距離 */
-  top: 50%;            /* 垂直置中 */
+
+/* === 左側資訊與控制區 (統一包裝) === */
+.left-panel {
+  position: absolute;
+  left: 80px;            /* 距離左邊 80px，避免撞到中間的遊戲板 */
+  top: 50%;
   transform: translateY(-50%);
   display: flex;
-  flex-direction: row;
+  flex-direction: column; /* 讓最高分和音量上下排列 */
   align-items: center;
-  gap: 0.5rem;
+  gap: 2.5rem;           /* 最高分和音量之間的距離 */
 }
+
+/* 最高分儀表板外觀 */
+.high-score-board {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  background-color: #222;
+  padding: 0.8rem 1.2rem;
+  border-radius: 8px;
+  border: 1px solid #444;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5); /* 加上立體陰影 */
+}
+
+/* 獎盃 Icon */
+.high-score-board .icon {
+  font-size: 2rem;
+  margin: 0;
+}
+
+/* 右側文字區塊 */
+.high-score-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* "最高分" 三個字 */
+.high-score-text .label {
+  font-size: 0.85rem;
+  color: #aaa;
+  margin-bottom: 2px;
+  font-weight: 600;
+}
+
+/* 分數數字 */
+.high-score-text .number {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ffcc00; /* 金黃色 */
+  text-shadow: 0 0 8px rgba(255, 204, 0, 0.4); /* 發光效果 */
+  line-height: 1;
+}
+
+/* 改寫原本的音量控制 */
+.volume-control {
+  display: flex;
+  flex-direction: column; /* 讓文字、拉桿、按鈕整齊上下排列 */
+  align-items: center;
+  gap: 0.8rem;
+  color: #ccc;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+
 
 /* 垂直 slider */
 .volume-control input[type="range"] {

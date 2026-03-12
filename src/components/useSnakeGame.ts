@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useGameAudio } from './useGameAudio'
 import { usePowerups } from './usePowerups'
+import { useGameScore } from './useGameScore'
 
 const GRID_SIZE = 20
 const BOARD_SIZE = GRID_SIZE * GRID_SIZE
@@ -58,7 +59,9 @@ export function useSnakeGame() {
   const foodRef = useRef<number>(getRandomFood(new Set(INITIAL_SNAKE), false))
   const [food, setFood] = useState<number>(foodRef.current)
 
-  const [score, setScore] = useState<number>(0)
+  // const [score, setScore] = useState<number>(0)
+  const { score, highScore, updateScore, resetScore } = useGameScore()
+
   const [gameStatus, setGameStatus] = useState<GameStatus>('idle')
 
   // 用 ref 保存最新方向，避免 closure bug
@@ -127,7 +130,8 @@ export function useSnakeGame() {
     directionQueue.current = [INITIAL_DIRECTION]
 
     setFood(getRandomFood(initialSet, wallEnabled))
-    setScore(0)
+    // setScore(0)
+    resetScore() 
     setGameStatus('playing')
     setWallEnabled(false)
     wallRef.current = { nextScore: 10, interval: 15 }
@@ -279,7 +283,8 @@ export function useSnakeGame() {
       if (willEat) {
         setGameEvent('eat')
         const nextScore = score + 1
-        setScore(nextScore)
+        // setScore(nextScore)
+        updateScore(nextScore)
 
         // 1. 解決問題 3：預先計算當下最新的牆壁狀態
         let currentWallActive = wallEnabled
@@ -332,6 +337,7 @@ export function useSnakeGame() {
     snakeSet, 
     food,
     score,
+    highScore,
     gameStatus,
     direction,
     startGame,
