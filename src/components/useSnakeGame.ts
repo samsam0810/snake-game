@@ -2,24 +2,15 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useGameAudio } from './useGameAudio'
 import { usePowerups } from './usePowerups'
 import { useGameScore } from './useGameScore'
+import { useDirection } from './useDirection'
 
 const GRID_SIZE = 20
 const BOARD_SIZE = GRID_SIZE * GRID_SIZE
 
-export type Direction = 'up' | 'down' | 'left' | 'right'
 export type GameStatus = 'idle' | 'playing' | 'paused' | 'gameOver'
 
 
-
-const oppositeDirection: Record<Direction, Direction> = {
-  up: 'down',
-  down: 'up', 
-  left: 'right',
-  right: 'left',
-}
-
 const INITIAL_SNAKE: number[] = [42, 41, 40]
-const INITIAL_DIRECTION: Direction = 'right'
 
 
 function getRandomFood(snakeSet: Set<number>, wallEnabled: boolean): number {
@@ -59,15 +50,16 @@ export function useSnakeGame() {
   const foodRef = useRef<number>(getRandomFood(new Set(INITIAL_SNAKE), false))
   const [food, setFood] = useState<number>(foodRef.current)
 
-  // const [score, setScore] = useState<number>(0)
   const { score, highScore, updateScore, resetScore } = useGameScore()
 
   const [gameStatus, setGameStatus] = useState<GameStatus>('idle')
 
-  // 用 ref 保存最新方向，避免 closure bug
-  const directionRef = useRef<Direction>(INITIAL_DIRECTION)
-  const [direction, setDirectionState] = useState<Direction>(INITIAL_DIRECTION)
-  const directionQueue = useRef<Direction[]>([INITIAL_DIRECTION])
+  const { 
+    direction, 
+    handleSetDirection, 
+    getNextDirection, 
+    resetDirection 
+  } = useDirection()
 
   // === 新增：牆模式 state & ref ===
   const [wallEnabled, setWallEnabled] = useState(false)
@@ -86,7 +78,6 @@ export function useSnakeGame() {
     resetPowerups
   } = usePowerups(snakeSet, food)
 
-  // const starDisappearTimeoutRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (gameStatus === 'playing') {
@@ -125,9 +116,8 @@ export function useSnakeGame() {
     setSnake(INITIAL_SNAKE)
     setSnakeSet(initialSet)
 
-    directionRef.current = INITIAL_DIRECTION
-    setDirectionState(INITIAL_DIRECTION)
-    directionQueue.current = [INITIAL_DIRECTION]
+    resetDirection()
+
 
     setFood(getRandomFood(initialSet, wallEnabled))
     // setScore(0)
@@ -175,18 +165,6 @@ export function useSnakeGame() {
     }, [])
 
 
-  const setDirection = useCallback((dir: Direction) => {
-    const currentDir = directionRef.current
-    const lastDir = directionQueue.current.length > 0
-      ? directionQueue.current[directionQueue.current.length - 1]
-      : currentDir
-
-
-    if (dir === lastDir || dir === oppositeDirection[lastDir]) return
-    
-    directionQueue.current.push(dir)
-  }, [])
-
   // 自動移動與吃食物與死亡判定
   useEffect(() => {
     if (gameStatus !== 'playing') {
@@ -195,14 +173,7 @@ export function useSnakeGame() {
 
     const gameTick = () => {
       // 取得方向
-      const nextDir = directionQueue.current.length > 0
-        ? directionQueue.current.shift()!
-        : directionRef.current
-
-      // 出隊時檢查反方向，避免立刻撞自己
-      const actualDir = nextDir === oppositeDirection[directionRef.current] ? directionRef.current : nextDir
-      directionRef.current = actualDir
-      setDirectionState(actualDir)
+      const actualDir = getNextDirection()
 
       const prevSnake = snakeRef.current
       const head = prevSnake[0]
@@ -268,7 +239,6 @@ export function useSnakeGame() {
         const snakeBody = new Set(newSnake.slice(1))
         if (snakeBody.has(newHead) && !isInvincible) {
           setGameStatus('gameOver')
-          // resetBgm()
           return
         }
       
@@ -283,7 +253,6 @@ export function useSnakeGame() {
       if (willEat) {
         setGameEvent('eat')
         const nextScore = score + 1
-        // setScore(nextScore)
         updateScore(nextScore)
 
         // 1. 解決問題 3：預先計算當下最新的牆壁狀態
@@ -329,7 +298,7 @@ export function useSnakeGame() {
     const intervalId = setInterval(gameTick, isBoosted ? 80 : 150)
   return () => clearInterval(intervalId)
 
-  // 記得這裡要在依賴陣列中加入 isBoosted！這樣狀態一變，就會立刻切換速度
+  // 在依賴陣列中加入 isBoosted，狀態一變，就會立刻切換速度
   }, [gameStatus, wallEnabled, score, food, spawnSpeedPowerup, isBoosted, handleEatInvincibleStar, invincibleStar, speedPowerups])
 
   return {
@@ -342,7 +311,7 @@ export function useSnakeGame() {
     direction,
     startGame,
     togglePause,
-    setDirection,
+    setDirection: handleSetDirection,
     bgmVolume,
     setBgmVolume,
     wallEnabled,

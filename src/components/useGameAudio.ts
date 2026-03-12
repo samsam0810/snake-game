@@ -84,7 +84,7 @@ export function useGameAudio() {
     setVolume,
     toggleMute,
     playBgm,
-    pauseBgm,
+    pauseBgm,   
     resetBgm,
     playEat,
     playGameOver,

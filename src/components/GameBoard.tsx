@@ -1,7 +1,8 @@
 import { useEffect } from 'react'
 import './GameBoard.css'
 import { useSnakeGame } from './useSnakeGame'
-import type { Direction, GameStatus } from './useSnakeGame'
+import type {GameStatus } from './useSnakeGame'
+import type { Direction } from './useDirection'
 
 const GRID_SIZE = 20
 const BOARD_SIZE = GRID_SIZE * GRID_SIZE
