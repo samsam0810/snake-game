@@ -322,6 +322,7 @@ export function usePowerups(snakeSet: Set<number>, food: number) {
     eatSpeedPowerup,
     invincibleStar,
     isInvincible,
+    isInvincibleRef,
     handleEatInvincibleStar,
     starRemaining,
     pausePowerups,

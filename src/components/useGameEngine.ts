@@ -59,6 +59,7 @@ export function useGameEngine() {
     eatSpeedPowerup, 
     invincibleStar,
     isInvincible,
+    isInvincibleRef,
     handleEatInvincibleStar,
     starRemaining,
     pausePowerups,
@@ -145,7 +146,7 @@ export function useGameEngine() {
       const actualDir = getNextDirection()
             // 1. 取得蛇頭的下一步，並檢查有沒有撞牆
       const head = snakeRef.current[0]
-      const { newHead, hitWall } = getNextHeadPosition(head, actualDir, wallEnabled, isInvincible)
+      const { newHead, hitWall } = getNextHeadPosition(head, actualDir, wallEnabled, isInvincibleRef.current)
 
       if (hitWall) {
         setGameStatus('gameOver')
@@ -156,7 +157,7 @@ export function useGameEngine() {
       const willEat = newHead === food
 
       // 3. 移動蛇的身體，並檢查有沒有咬到自己
-      const { newSnake, hitSelf } = moveSnakeBody(newHead, willEat, isInvincible)
+      const { newSnake, hitSelf } = moveSnakeBody(newHead, willEat, isInvincibleRef.current)
 
       if (hitSelf) {
         setGameStatus('gameOver')
