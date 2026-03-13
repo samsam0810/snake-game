@@ -1,7 +1,9 @@
 # Snake Game (貪食蛇遊戲)
 
 ![snake-game](public/images/snake-gmae.png) <!-- 遊戲截圖 -->
-![Snake Game Demo](https://github.com/user-attachments/assets/50b51694-cb00-4e90-963d-7a5990cc7746)
+<video src="[https://github.com/user-attachments/assets/xxxxxxxx-xxxx-xxxx-xxxx.mp4](https://github.com/user-attachments/assets/50b51694-cb00-4e90-963d-7a5990cc7746)" controls="controls" muted="muted" width="800">
+</video>
+
 
 ## 專案介紹
 這是一個使用 **React + TypeScript + Vite + CSS** 製作的進階版貪食蛇遊戲。  
