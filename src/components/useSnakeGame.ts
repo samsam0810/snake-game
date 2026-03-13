@@ -4,29 +4,15 @@ import { usePowerups } from './usePowerups'
 import { useGameScore } from './useGameScore'
 import { useDirection } from './useDirection'
 import { useBoost } from './useBoost'
+import { useFood, getRandomFood } from './useFood'
+
 
 const GRID_SIZE = 20
-const BOARD_SIZE = GRID_SIZE * GRID_SIZE
 
 export type GameStatus = 'idle' | 'playing' | 'paused' | 'gameOver'
 
 
 const INITIAL_SNAKE: number[] = [42, 41, 40]
-
-
-function getRandomFood(snakeSet: Set<number>, wallEnabled: boolean): number {
-  let food: number
-  do {
-    food = Math.floor(Math.random() * BOARD_SIZE)
-  } while (snakeSet.has(food) || (wallEnabled && isWallCell(food)))
-  return food
-}
-
-function isWallCell(index: number) {
-  const row = Math.floor(index / GRID_SIZE)
-  const col = index % GRID_SIZE
-  return row < 0 || row >= GRID_SIZE || col < 0 || col >= GRID_SIZE
-}
 
 
 export function useSnakeGame() {
@@ -51,6 +37,11 @@ export function useSnakeGame() {
   const foodRef = useRef<number>(getRandomFood(new Set(INITIAL_SNAKE), false))
   const [food, setFood] = useState<number>(foodRef.current)
 
+  const [wallEnabled, setWallEnabled] = useState(false)
+
+  const { wallRef: foodWallRef, resetWallConfig, calculateNextWallStatus } = useFood()
+
+
   const { score, highScore, updateScore, resetScore } = useGameScore()
 
   const [gameStatus, setGameStatus] = useState<GameStatus>('idle')
@@ -62,9 +53,6 @@ export function useSnakeGame() {
     resetDirection 
   } = useDirection()
 
-  // === 新增：牆模式 state & ref ===
-  const [wallEnabled, setWallEnabled] = useState(false)
-  const wallRef = useRef({ nextScore: 10, interval: 15 }) // 初始牆出現分數 10，間隔 15
 
   const {
     speedPowerups,
@@ -117,19 +105,18 @@ export function useSnakeGame() {
     setSnakeSet(initialSet)
 
     resetDirection()
+    resetWallConfig()
 
-
-    setFood(getRandomFood(initialSet, wallEnabled))
+    setFood(getRandomFood(initialSet, false))
+    setWallEnabled(false)
     resetScore() 
     setGameStatus('playing')
-    setWallEnabled(false)
-    wallRef.current = { nextScore: 10, interval: 15 }
 
     resetBoost()
 
      // 重置道具並啟動無敵星星倒數
     resetPowerups() 
-  }, [wallEnabled, resetPowerups])
+  }, [resetPowerups, resetDirection, resetWallConfig, resetScore, resetBoost])
 
 
 
@@ -238,26 +225,17 @@ export function useSnakeGame() {
         // === 吃到食物 ===
       if (willEat) {
         setGameEvent('eat')
-        const nextScore = score + 1
+        const { nextScore, nextWallActive } = calculateNextWallStatus(score, wallEnabled)
         updateScore(nextScore)
-
-        // 1. 解決問題 3：預先計算當下最新的牆壁狀態
-        let currentWallActive = wallEnabled
-        if (!wallEnabled && nextScore === wallRef.current.nextScore) {
-          setWallEnabled(true)
-          currentWallActive = true // 標記為有牆
-        } else if (wallEnabled && nextScore === wallRef.current.nextScore + 5) {
-          setWallEnabled(false)
-          currentWallActive = false // 標記為無牆
-          wallRef.current.nextScore += wallRef.current.interval
-          wallRef.current.interval += 5
-        }
+        setWallEnabled(nextWallActive)
+    
+        const newFoodPos = getRandomFood(new Set(newSnake), nextWallActive)
+        setFood(newFoodPos)
+        foodRef.current = newFoodPos // 同步 ref
 
         if (nextScore % 5 === 0) {
           spawnSpeedPowerup()
         }
-
-        setFood(getRandomFood(new Set(newSnake), currentWallActive))
       }
 
       if (newHead === invincibleStar) {
@@ -273,7 +251,7 @@ export function useSnakeGame() {
   return () => clearInterval(intervalId)
 
   // 在依賴陣列中加入 isBoosted，狀態一變，就會立刻切換速度
-  }, [gameStatus, wallEnabled, score, food, spawnSpeedPowerup, isBoosted, handleEatInvincibleStar, invincibleStar, speedPowerups])
+  }, [gameStatus, wallEnabled, score, food, spawnSpeedPowerup, isBoosted, handleEatInvincibleStar, invincibleStar, speedPowerups, calculateNextWallStatus, updateScore, getNextDirection, eatSpeedPowerup, triggerBoost])
 
   return {
     snake,
@@ -290,7 +268,7 @@ export function useSnakeGame() {
     setBgmVolume,
     wallEnabled,
     speedPowerups,
-    wallRef,
+    wallRef: foodWallRef,
     invincibleStar,
     isInvincible,
     toggleMute,
