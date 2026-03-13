@@ -5,15 +5,9 @@ import { useGameScore } from './useGameScore'
 import { useDirection } from './useDirection'
 import { useBoost } from './useBoost'
 import { useFood, getRandomFood } from './useFood'
-
-
-const GRID_SIZE = 20
+import { useSnake, INITIAL_SNAKE } from './useSnake'
 
 export type GameStatus = 'idle' | 'playing' | 'paused' | 'gameOver'
-
-
-const INITIAL_SNAKE: number[] = [42, 41, 40]
-
 
 export function useSnakeGame() {
   const {
@@ -30,9 +24,14 @@ export function useSnakeGame() {
 
   const [gameEvent, setGameEvent] = useState<null | 'eat'>(null)
 
-  const [snake, setSnake] = useState<number[]>(INITIAL_SNAKE)
-  const snakeRef = useRef<number[]>(INITIAL_SNAKE)
-  const [snakeSet, setSnakeSet] = useState<Set<number>>(new Set(INITIAL_SNAKE))
+  const { 
+    snake, 
+    snakeRef, 
+    snakeSet, 
+    resetSnake, 
+    getNextHeadPosition, 
+    moveSnakeBody 
+  } = useSnake()
 
   const foodRef = useRef<number>(getRandomFood(new Set(INITIAL_SNAKE), false))
   const [food, setFood] = useState<number>(foodRef.current)
@@ -99,10 +98,7 @@ export function useSnakeGame() {
   } = useBoost()
 
   const startGame = useCallback(() => {
-    const initialSet = new Set(INITIAL_SNAKE)
-    snakeRef.current = INITIAL_SNAKE // 同步更新 ref
-    setSnake(INITIAL_SNAKE)
-    setSnakeSet(initialSet)
+    const initialSet = resetSnake()
 
     resetDirection()
     resetWallConfig()
@@ -116,7 +112,7 @@ export function useSnakeGame() {
 
      // 重置道具並啟動無敵星星倒數
     resetPowerups() 
-  }, [resetPowerups, resetDirection, resetWallConfig, resetScore, resetBoost])
+  }, [resetSnake, resetPowerups, resetDirection, resetWallConfig, resetScore, resetBoost])
 
 
 
@@ -147,80 +143,25 @@ export function useSnakeGame() {
     const gameTick = () => {
       // 取得方向
       const actualDir = getNextDirection()
+            // 1. 取得蛇頭的下一步，並檢查有沒有撞牆
+      const head = snakeRef.current[0]
+      const { newHead, hitWall } = getNextHeadPosition(head, actualDir, wallEnabled, isInvincible)
 
-      const prevSnake = snakeRef.current
-      const head = prevSnake[0]
-      let newHead = head
-        
-      // === 判斷牆撞擊 ===
-      const isAtWall = 
-        (actualDir === 'right' && head % GRID_SIZE === GRID_SIZE - 1) ||
-        (actualDir === 'left' && head % GRID_SIZE === 0) ||
-        (actualDir === 'up' && head < GRID_SIZE) ||
-        (actualDir === 'down' && head >= GRID_SIZE * (GRID_SIZE - 1))
-
-      if (wallEnabled && isAtWall && !isInvincible) {
+      if (hitWall) {
         setGameStatus('gameOver')
         return
       }
 
-      switch (actualDir) {
-        case 'right': {
-          const atRightEdge = head % GRID_SIZE === GRID_SIZE - 1
-          if (wallEnabled && atRightEdge && !isInvincible) {
-            setGameStatus('gameOver')
-            return
-          }
-          //正常移動
-          newHead = atRightEdge ? head - (GRID_SIZE - 1) : head + 1
-          break
-        }
-        case 'left': {
-          const atLeftEdge = head % GRID_SIZE === 0
-          if (wallEnabled && atLeftEdge && !isInvincible) {
-            setGameStatus('gameOver')
-            return
-          }
-          newHead = atLeftEdge ? head + (GRID_SIZE - 1) : head - 1
-          break
-        }
-        case 'up': {
-          const atTopEdge = head < GRID_SIZE
-          if (wallEnabled && atTopEdge && !isInvincible) {
-          setGameStatus('gameOver')
-          return
-          }
-           newHead = atTopEdge ? head + GRID_SIZE * (GRID_SIZE - 1) : head - GRID_SIZE
-          break
-        }
-        case 'down': {
-          const atBottomEdge = head >= GRID_SIZE * (GRID_SIZE - 1)
-          if (wallEnabled && atBottomEdge && !isInvincible) {
-            setGameStatus('gameOver')
-            return
-          }
-          newHead = atBottomEdge ? head % GRID_SIZE : head + GRID_SIZE
-          break
-        }
+      // 2. 判斷這一步會不會吃到食物
+      const willEat = newHead === food
+
+      // 3. 移動蛇的身體，並檢查有沒有咬到自己
+      const { newSnake, hitSelf } = moveSnakeBody(newHead, willEat, isInvincible)
+
+      if (hitSelf) {
+        setGameStatus('gameOver')
+        return
       }
-
-        const willEat = newHead === food
-        const newSnake = willEat
-          ? [newHead, ...prevSnake]
-          : [newHead, ...prevSnake.slice(0, -1)]
-
-        const snakeBody = new Set(newSnake.slice(1))
-        if (snakeBody.has(newHead) && !isInvincible) {
-          setGameStatus('gameOver')
-          return
-        }
-      
-        // 更新 snakeRef，給下一次 interval 用
-        snakeRef.current = newSnake
-        // 同步更新所有 state 給畫面渲染
-        setSnake(newSnake)
-        setSnakeSet(new Set(newSnake))
-
 
         // === 吃到食物 ===
       if (willEat) {
@@ -251,7 +192,7 @@ export function useSnakeGame() {
   return () => clearInterval(intervalId)
 
   // 在依賴陣列中加入 isBoosted，狀態一變，就會立刻切換速度
-  }, [gameStatus, wallEnabled, score, food, spawnSpeedPowerup, isBoosted, handleEatInvincibleStar, invincibleStar, speedPowerups, calculateNextWallStatus, updateScore, getNextDirection, eatSpeedPowerup, triggerBoost])
+  }, [gameStatus, wallEnabled, score, food, spawnSpeedPowerup, isBoosted, handleEatInvincibleStar, invincibleStar, speedPowerups, calculateNextWallStatus, updateScore, getNextDirection, eatSpeedPowerup, triggerBoost, getNextHeadPosition, moveSnakeBody])
 
   return {
     snake,
