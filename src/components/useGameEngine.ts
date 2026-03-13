@@ -9,7 +9,7 @@ import { useSnake, INITIAL_SNAKE } from './useSnake'
 
 export type GameStatus = 'idle' | 'playing' | 'paused' | 'gameOver'
 
-export function useSnakeGame() {
+export function useGameEngine() {
   const {
     isMuted,
     volume: bgmVolume,
@@ -215,6 +215,7 @@ export function useSnakeGame() {
     toggleMute,
     isMuted,
     starRemaining,
+    isBoosted,
   }
 }
 

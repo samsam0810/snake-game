@@ -3,18 +3,19 @@
 ![snake-game](public/images/snake-gmae.png) <!-- 可自行放遊戲截圖 -->
 
 ## 專案介紹
-這是一個使用 **React + TypeScript + Vite + CSS** 製作的貪食蛇遊戲。  
-目標是打造一個可玩的作品，支援鍵盤操作、道具、牆提示等功能。
+這是一個使用 **React + TypeScript + Vite + CSS** 製作的進階版貪食蛇遊戲。  
+除了經典的玩法外，還加入了多種動態道具、牆壁障礙機制，並採用了**高度模組化的 React Custom Hooks 架構**來管理遊戲狀態，展現了良好的「關注點分離 (Separation of Concerns)」設計模式。
 
 ---
 
-## 遊戲特色
-- **經典貪食蛇玩法**：上下左右方向鍵控制蛇身
-- **加速道具**：黃色道具會閃爍，吃到後增加遊戲速度
-- **牆生成提示**：當分數達到一定值時，右側會顯示牆即將生成的提示
-- **動態分數**：遊戲分數即時更新
-- **遊戲暫停/開始**：空白鍵可暫停或開始遊戲
-- **音量控制**：左側提供背景音量調整滑桿
+## 🌟 遊戲特色
+- **經典貪食蛇玩法**：使用上下左右方向鍵控制蛇身移動。
+- **⚡ 加速道具 (閃電)**：黃色閃爍道具，吃到後獲得 3 秒的速度翻倍與專屬霓虹視覺特效。
+- **⭐ 無敵星星**：吃到後限時內呈現無敵發光狀態，可以直接穿牆且咬到自己不會死！
+- **🧱 動態牆壁機制**：牆壁會隨著分數達到特定階段自動升起與降下，右側面板會即時顯示預告。
+- **🏆 歷史最高分**：遊戲會透過瀏覽器的 `localStorage` 自動記錄並顯示你的歷史最高分。
+- **🎵 音效與音量控制**：包含吃食物、死亡音效與 BGM，並提供左側音量滑桿與一鍵靜音功能。
+- **暫停與恢復**：隨時按下空白鍵即可暫停遊戲，道具的倒數計時也會精準暫停。
 
 ---
 
@@ -48,18 +49,31 @@ serve -s dist
 框架：React 18 + TypeScript
 打包工具：Vite
 樣式：CSS Grid + Flexbox
-狀態管理：React Hook
 動畫效果：CSS Animation (食物 pop 動畫、加速道具閃爍)
+狀態管理：React Hook
+本地儲存：localStorage (最高分紀錄)
 
 #專案結構
 ├─ src/
-│  ├─ GameBoard.tsx        # 遊戲主畫面
-│  ├─ GameBoard.css        # 遊戲樣式
-│  ├─ useSnakeGame.ts      # 遊戲邏輯 Hook
-│  └─ main.tsx             # React 入口
+│  ├─ components/
+│  │  ├─ GameBoard.tsx        # 遊戲主畫面 UI 元件
+│  │  └─ GameBoard.css        # 遊戲特效與版面樣式
+│  │
+│  ├─ hooks/ (狀態與邏輯層)
+│  │  ├─ useGameEngine.ts     # 主控台：負責協調所有 Hooks 與主迴圈 (Game Loop)
+│  │  ├─ useSnake.ts          # 物理系統：管理蛇的座標、移動與碰撞判定
+│  │  ├─ useFood.ts           # 場地系統：管理食物生成位置與牆壁開關邏輯
+│  │  ├─ useDirection.ts      # 操控系統：管理鍵盤輸入與防呆佇列 (Queue)
+│  │  ├─ useBoost.ts          # 加速系統：管理速度狀態與倒數計時器
+│  │  ├─ usePowerups.ts       # 道具系統：管理星星等特殊道具的生成與持續時間
+│  │  ├─ useGameScore.ts      # 分數系統：管理當前分數與 localStorage 最高分
+│  │  └─ useGameAudio.ts      # 音效系統：管理 BGM 與音效的播放與靜音
+│  │
+│  └─ main.tsx                # React 進入點
 ├─ package.json
 ├─ vite.config.ts
 └─ README.md
+
 
 #未來功能拓展
 

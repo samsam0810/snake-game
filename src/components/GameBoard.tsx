@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import './GameBoard.css'
-import { useSnakeGame } from './useSnakeGame'
-import type {GameStatus } from './useSnakeGame'
+import { useGameEngine } from './useGameEngine'
+import type {GameStatus } from './useGameEngine'
 import type { Direction } from './useDirection'
 
 const GRID_SIZE = 20
@@ -42,7 +42,8 @@ export function GameBoard() {
     toggleMute,
     isMuted,
     starRemaining,
-  } = useSnakeGame()
+    isBoosted,
+  } = useGameEngine()
 
   const cells = Array.from({ length: BOARD_SIZE })
 
@@ -128,11 +129,27 @@ export function GameBoard() {
         </div>
         </div>
         {/* 右側牆提示 */}
-        {speedPowerups.length > 0 && (
+        {/* {speedPowerups.length > 0 && (
           <div className="speed-hint">
             加速道具(黃色)出現(持續10秒)，速度將變為兩倍持續3秒！
           </div>
-        )}
+        )} */}
+         <div className="right-panel">
+          {/* 當場上有閃電道具，且玩家還沒吃到時顯示 */}
+          {speedPowerups.length > 0 && !isBoosted && (
+            <div className="speed-hint">
+              <span className="icon">⚡</span> 閃電出現！(吃掉加速 3 秒)
+            </div>
+          )}
+
+          {/* 當玩家吃到閃電，處於加速狀態時顯示超炫特效 */}
+          {isBoosted && (
+            <div className="speed-hint active">
+              <span className="icon flash-icon">⚡</span>
+              <span className="boost-text">SPEED BOOST!</span>
+            </div>
+          )}
+          
         {invincibleStar !== null && !isInvincible && (
           <div className="invincible-hint">
             <span className="icon">⭐</span>
@@ -156,6 +173,7 @@ export function GameBoard() {
               }
             </div>
           )}
+        </div>
         </div>
       <div className="game-board-container">
       <div className="game-board">

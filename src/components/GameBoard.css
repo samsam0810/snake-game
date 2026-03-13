@@ -204,9 +204,6 @@
 }
 
 .speed-powerup {
-  /* background-color: yellow; */
-  /* background-color: #00BFFF; */
-  /* border-radius: 50%; */
   position: relative;       /* 為 ::after 定位 */
   animation: blink 0.8s infinite; /* 閃爍動畫 */
 }
@@ -229,18 +226,35 @@
 
 .speed-hint {
   position: absolute;
-  right: 150px;        /* 跟牆提示詞對齊 */
-  top: 30%;            /* 比牆提示詞高 */
+  right: 150px;        
+  top: 30%;            
   transform: translateY(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
   width: 200px;
-  color: #fff;
+  color: yellow;
   font-size: 0.9rem;
   font-weight: 600;
   text-align: center;
   text-shadow: 0 0 3px #000;
+}
+
+.speed-hint.active {
+  color: #00e5ff; /* 閃電的螢光藍色 */
+  animation: speed-glow 0.8s infinite alternate; /* 共用的發光動畫 */
+}
+
+/* 共用的提示詞文字發光動畫 (給星星和閃電一起用) */
+@keyframes speed-glow {
+  0% {
+    text-shadow: 0 0 3px #000, 0 0 5px currentColor;
+    opacity: 0.8;
+  }
+  100% {
+    text-shadow: 0 0 3px #000, 0 0 15px currentColor;
+    opacity: 1;
+  }
 }
 
 .wall-hint {
@@ -252,7 +266,7 @@
   align-items: center;
   justify-content: center;
   width: 200px;             
-  color: #fff;              /* 白色字，更明顯 */
+  color: #ffa500;       
   font-size: 0.9rem;        /* 稍微大一點 */
   font-weight: 600;         /* 半粗體 */
   text-align: center;
@@ -356,3 +370,4 @@
 .mute-button .icon {
   font-size: 1rem;
 }
+
