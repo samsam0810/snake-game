@@ -3,6 +3,7 @@ import { useGameAudio } from './useGameAudio'
 import { usePowerups } from './usePowerups'
 import { useGameScore } from './useGameScore'
 import { useDirection } from './useDirection'
+import { useBoost } from './useBoost'
 
 const GRID_SIZE = 20
 const BOARD_SIZE = GRID_SIZE * GRID_SIZE
@@ -101,14 +102,13 @@ export function useSnakeGame() {
   }
 }, [gameEvent, playEat])
 
-
-  const [isBoosted, setIsBoosted] = useState(false)
-
-  const BOOST_DURATION = 3000
-
-  const boostTimeoutRef = useRef<number | null>(null)
-  const boostStartRef = useRef<number>(0)
-  const boostRemainingRef = useRef<number>(BOOST_DURATION)
+  const { 
+    isBoosted, 
+    triggerBoost, 
+    pauseBoost, 
+    resumeBoost, 
+    resetBoost 
+  } = useBoost()
 
   const startGame = useCallback(() => {
     const initialSet = new Set(INITIAL_SNAKE)
@@ -120,14 +120,12 @@ export function useSnakeGame() {
 
 
     setFood(getRandomFood(initialSet, wallEnabled))
-    // setScore(0)
     resetScore() 
     setGameStatus('playing')
     setWallEnabled(false)
     wallRef.current = { nextScore: 10, interval: 15 }
 
-
-    setIsBoosted(false) // <--- 新增這行，確保重新開始時不會自帶加速
+    resetBoost()
 
      // 重置道具並啟動無敵星星倒數
     resetPowerups() 
@@ -140,29 +138,17 @@ export function useSnakeGame() {
       setGameStatus((prev) => {
         if (prev === 'playing') {
           pausePowerups()
-          if (boostTimeoutRef.current) {
-            clearTimeout(boostTimeoutRef.current)
-
-            const elapsed = Date.now() - boostStartRef.current
-            boostRemainingRef.current -= elapsed
-          }
+          pauseBoost()
           return 'paused'
         }
         if (prev === 'paused'){
           resumePowerups()
-          if (boostRemainingRef.current > 0) {
-            boostStartRef.current = Date.now()
-
-            boostTimeoutRef.current = window.setTimeout(() => {
-              setIsBoosted(false)
-              boostTimeoutRef.current = null
-            }, boostRemainingRef.current)
-          }
+          resumeBoost()
           return 'playing'
         }
         return prev
       })
-    }, [])
+    }, [pausePowerups, resumePowerups, pauseBoost, resumeBoost])
 
 
   // 自動移動與吃食物與死亡判定
@@ -280,19 +266,7 @@ export function useSnakeGame() {
 
       if (speedPowerups.includes(newHead)) {
         eatSpeedPowerup(newHead)
-        setIsBoosted(true)
-
-      if (boostTimeoutRef.current) {
-          clearTimeout(boostTimeoutRef.current)
-        }
-
-        boostStartRef.current = Date.now()
-        boostRemainingRef.current = BOOST_DURATION
-
-        boostTimeoutRef.current = window.setTimeout(() => {
-          setIsBoosted(false)
-          boostTimeoutRef.current = null
-        }, BOOST_DURATION)
+        triggerBoost() 
       }
     }
     const intervalId = setInterval(gameTick, isBoosted ? 80 : 150)
