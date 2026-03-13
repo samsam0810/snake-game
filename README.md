@@ -1,6 +1,8 @@
 # Snake Game (貪食蛇遊戲)
 
 ![snake-game](public/images/snake-gmae.png) <!-- 遊戲截圖 -->
+
+
 ## 專案介紹
 這是一個使用 **React + TypeScript + Vite + CSS** 製作的進階版貪食蛇遊戲。  
 除了經典的玩法外，還加入了多種動態道具、牆壁障礙機制，並採用了**高度模組化的 React Custom Hooks 架構**來管理遊戲狀態，展現了良好的「關注點分離 (Separation of Concerns)」設計模式。
